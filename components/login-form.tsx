@@ -20,7 +20,7 @@ const formSchema = z.object({
 })
 
 export function LoginForm() {
-  const { close } = useLoginModal()
+  const { close, targetUrl } = useLoginModal()
   const { login } = useAuth()
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -33,7 +33,8 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await login(values.username, values.password)
+      // 传递目标URL给login函数
+      await login(values.username, values.password, targetUrl || "/")
       console.log("Login successful!")
       close()
     } catch (error) {
