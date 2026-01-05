@@ -25,12 +25,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 这里可以添加实际的登录逻辑
     // 模拟登录成功
     setIsLoggedIn(true)
+    
+    // 同时存储到localStorage和cookie
     localStorage.setItem("isLoggedIn", "true")
+    document.cookie = "isLoggedIn=true; path=/; max-age=86400" // 1天过期
   }, [])
 
   const logout = React.useCallback(() => {
     setIsLoggedIn(false)
+    
+    // 同时从localStorage和cookie移除
     localStorage.removeItem("isLoggedIn")
+    document.cookie = "isLoggedIn=; path=/; max-age=0" // 立即过期
   }, [])
 
   return (

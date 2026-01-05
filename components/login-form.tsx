@@ -34,10 +34,10 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       await login(values.username, values.password)
-      alert("Login successful!")
+      console.log("Login successful!")
       close()
     } catch (error) {
-      alert("Login failed. Please try again.")
+      console.error("Login failed:", error) 
     }
   }
 
