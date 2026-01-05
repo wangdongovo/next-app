@@ -42,22 +42,22 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "dashboard",
+      url: "/dashboard",
       icon: IconDashboard,
     },
     {
       title: "User",
-      url: "user",
+      url: "/user",
       icon: IconListDetails,
     },
     {
       title: "Analytics",
-      url: "analytics",
+      url: "/analytics",
       icon: IconChartBar,
     },
     {
       title: "Projects",
-      url: "projects",
+      url: "/projects",
       icon: IconFolder,
     },
     
@@ -115,7 +115,7 @@ const data = {
     
     {
       name: "Reports",
-      url: "reports",
+      url: "/reports",
       icon: IconReport,
     },
    
