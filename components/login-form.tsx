@@ -5,16 +5,10 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 
 import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useLoginModal } from "@/components/providers/login-modal-provider"
+import { useAuth } from "@/components/providers/auth-provider"
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -27,6 +21,7 @@ const formSchema = z.object({
 
 export function LoginForm() {
   const { close } = useLoginModal()
+  const { login } = useAuth()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -36,12 +31,14 @@ export function LoginForm() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values)
-    alert("Login successful (mock)!")
-    close()
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      await login(values.username, values.password)
+      alert("Login successful!")
+      close()
+    } catch (error) {
+      alert("Login failed. Please try again.")
+    }
   }
 
   return (
