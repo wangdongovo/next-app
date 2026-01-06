@@ -14,71 +14,10 @@ const inferMessageType = (content: string): Message["type"] => {
   return "text"
 }
 
-const mockResponses: Array<Pick<Message, "content" | "type">> = [
-  {
-    content:
-      "# 一级标题 H1 示例\n\n" +
-      "## 二级标题 H2 示例\n\n" +
-      "### 三级标题 H3 示例\n\n" +
-      "正文示例，包含 **加粗**、_斜体_、`行内代码` 和 [链接](https://example.com)。\n\n" +
-      "> 这是一个引用块，用于测试 blockquote 的样式展示。\n\n" +
-      "- 无序列表项 1\n" +
-      "- 无序列表项 2\n" +
-      "  - 子项 A\n" +
-      "  - 子项 B\n\n" +
-      "1. 有序列表 1\n" +
-      "2. 有序列表 2\n\n" +
-      "| 列 1 | 列 2 | 列 3 |\n" +
-      "| ---- | ---- | ---- |\n" +
-      "| 单元格 A | 单元格 B | 单元格 C |\n" +
-      "| 1 | 2 | 3 |\n\n" +
-      "下面是一个 TypeScript 代码块：\n\n" +
-      "```ts\n" +
-      "type User = {\n" +
-      "  id: number\n" +
-      "  name: string\n" +
-      "  tags?: string[]\n" +
-      "}\n\n" +
-      "const users: User[] = [\n" +
-      "  { id: 1, name: 'Alice', tags: ['admin', 'editor'] },\n" +
-      "  { id: 2, name: 'Bob' },\n" +
-      "]\n\n" +
-      "function findUser(id: number): User | undefined {\n" +
-      "  return users.find((u) => u.id === id)\n" +
-      "}\n\n" +
-      "console.log(findUser(1))\n" +
-      "```\n\n" +
-      "再来一个 JSON 代码块：\n\n" +
-      "```json\n" +
-      "{\n" +
-      '  \"id\": 123,\n' +
-      '  \"title\": \"Markdown 测试\",\n' +
-      '  \"tags\": [\"demo\", \"markdown\", \"code\"],\n' +
-      "  \"nested\": { \"enabled\": true }\n" +
-      "}\n" +
-      "```",
-    type: "markdown",
-  },
-  {
-    content:
-      "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?auto=format&fit=crop&w=1200&q=80.jpg",
-    type: "image",
-  },
-  {
-    content:
-      "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
-    type: "video",
-  },
-  {
-    content:
-      "```ts\n// 代码块示例\nconst greet = (name: string) => `Hello, ${name}!`\nconsole.log(greet('AI'))\n```",
-    type: "markdown",
-  },
-]
-
 export default function Chat() {
   const [messages, setMessages] = React.useState<Message[]>([])
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
+  const eventSourceRef = React.useRef<EventSource | null>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -92,31 +31,90 @@ export default function Chat() {
   }, [messages])
 
   const handleSendMessage = (content: string) => {
+    const trimmed = content.trim()
+    if (!trimmed) return
+
+    // 关闭上一次流，避免重复监听
+    eventSourceRef.current?.close()
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content,
-      type: inferMessageType(content),
+      content: trimmed,
+      type: inferMessageType(trimmed),
       timestamp: new Date(),
     }
 
-    setMessages((prev) => [...prev, userMessage])
+    const aiMessageId = `${Date.now()}-ai`
+    const aiMessage: Message = {
+      id: aiMessageId,
+      role: "assistant",
+      content: "",
+      type: "markdown",
+      timestamp: new Date(),
+    }
 
-    // Simulate AI response
-    setTimeout(() => {
-      const nextResponse =
-        mockResponses[Math.floor(Math.random() * mockResponses.length)]
+    setMessages((prev) => [...prev, userMessage, aiMessage])
 
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: nextResponse.content,
-        type: nextResponse.type ?? inferMessageType(nextResponse.content),
-        timestamp: new Date(),
+    const source = new EventSource(
+      `/api/chat/stream?q=${encodeURIComponent(trimmed)}`
+    )
+
+    source.onmessage = (event) => {
+      try {
+        if (event.data === "[DONE]") {
+          source.close()
+          return
+        }
+
+        const payload = JSON.parse(event.data) as {
+          id: string
+          choices: Array<{
+            delta?: { content?: string }
+            finish_reason: string | null
+          }>
+        }
+
+        const delta = payload.choices?.[0]?.delta?.content ?? ""
+        if (!delta) return
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessageId
+              ? { ...msg, content: `${msg.content}${delta}` }
+              : msg
+          )
+        )
+      } catch (err) {
+        console.error("Failed to parse SSE chunk", err)
       }
-      setMessages((prev) => [...prev, aiMessage])
-    }, 1000)
+    }
+
+    source.onerror = () => {
+      source.close()
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMessageId
+            ? {
+                ...msg,
+                content:
+                  msg.content ||
+                  "对话发生错误，请稍后再试或检查服务端日志。",
+              }
+            : msg
+        )
+      )
+    }
+
+    eventSourceRef.current = source
   }
+
+  useEffect(
+    () => () => {
+      eventSourceRef.current?.close()
+    },
+    []
+  )
 
   return (
     <div className="flex flex-col h-[calc(100vh-var(--header-height)-4rem)] max-w-4xl mx-auto w-full">
