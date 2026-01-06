@@ -103,6 +103,10 @@ const markdownComponents: Components = {
       />
     )
   },
+  p: ({ node, ...props }) => {
+    void node
+    return <p className="mb-2 mt-4" {...props} />
+  },
   code: CodeBlock,
   pre: ({ node, ...props }) => {
     void node
@@ -122,15 +126,15 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-4 py-4",
-        isUser ? "justify-end" : "justify-start"
+        "gap-4 py-4",
+        isUser ? "flex justify-end" : "justify-start"
       )}
     >
       
       
       <div
         className={cn(
-          "rounded-2xl px-4 py-3 max-w-[80%]",
+          "rounded-2xl px-4 py-3",
           isUser
             ? "bg-muted text-foreground"
             : "bg-card text-foreground"
