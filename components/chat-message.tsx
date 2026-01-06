@@ -22,20 +22,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
         isUser ? "justify-end" : "justify-start"
       )}
     >
-      {!isUser && (
-        <Avatar className="h-8 w-8 shrink-0">
-          <AvatarFallback className="bg-primary text-primary-foreground">
-            AI
-          </AvatarFallback>
-        </Avatar>
-      )}
+      
       
       <div
         className={cn(
           "rounded-2xl px-4 py-3 max-w-[80%]",
           isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-foreground"
+            ? "bg-muted text-foreground"
+            : "text-foreground"
         )}
       >
         <p className="text-sm whitespace-pre-wrap break-words">
@@ -43,13 +37,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         </p>
       </div>
 
-      {isUser && (
-        <Avatar className="h-8 w-8 shrink-0">
-          <AvatarFallback className="bg-secondary text-secondary-foreground">
-            U
-          </AvatarFallback>
-        </Avatar>
-      )}
+      
     </div>
   )
 }
