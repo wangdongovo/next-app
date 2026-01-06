@@ -119,9 +119,27 @@ const markdownComponents: Components = {
   },
 }
 
+// Keep user message markdown styling minimal so it does not bleed into other UI.
+const userMarkdownComponents: Components = {
+  ...markdownComponents,
+  p: ({ node, ...props }) => {
+    void node
+    return (
+      <p
+        className="mb-0 mt-0 whitespace-pre-wrap break-words text-sm leading-relaxed"
+        {...props}
+      />
+    )
+  },
+}
+
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user"
   const messageType = resolveMessageType(message)
+  const markdownWrapperClass = isUser
+    ? "max-w-none break-words"
+    : "prose prose-sm max-w-none break-words dark:prose-invert prose-pre:p-0 prose-pre:bg-transparent prose-code:text-[0.85em]"
+  const markdownComponentsForRole = isUser ? userMarkdownComponents : markdownComponents
 
   return (
     <div
@@ -153,11 +171,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
             className="max-h-80 w-full rounded-xl"
           />
         ) : (
-          <div className="prose prose-sm max-w-none break-words dark:prose-invert prose-pre:p-0 prose-pre:bg-transparent prose-code:text-[0.85em]">
+          <div className={markdownWrapperClass}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                ...markdownComponents,
+                ...markdownComponentsForRole,
                 a: ({ node, ...props }) => {
                   void node
                   return (

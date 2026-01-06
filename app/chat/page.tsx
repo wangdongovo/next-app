@@ -4,13 +4,14 @@ import * as React from "react"
 import { ChatPromptForm } from "@/components/chat-prompt-form"
 import { ChatMessage, type Message } from "@/components/chat-message"
 import { Card } from "@/components/ui/card"
+import { useEffect } from "react"
 
 const inferMessageType = (content: string): Message["type"] => {
   const trimmed = content.trim()
   if (/\.(png|jpe?g|gif|bmp|svg|webp)$/i.test(trimmed)) return "image"
   if (/\.(mp4|webm|ogg|mov|m4v)$/i.test(trimmed)) return "video"
-  if (/[#*\[\]_`]|```|\n/.test(trimmed)) return "markdown"
-  return "markdown"
+  if (/[#*\[\]_`]|```|\n/.test(trimmed)) return "text"
+  return "text"
 }
 
 const mockResponses: Array<Pick<Message, "content" | "type">> = [
@@ -83,8 +84,11 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     scrollToBottom()
+
+
+    console.log(messages)
   }, [messages])
 
   const handleSendMessage = (content: string) => {
