@@ -5,54 +5,79 @@ import { useRouter } from "next/navigation"
 
 interface AuthContextType {
   isLoggedIn: boolean
-  login: (username: string, password: string, targetUrl?: string) => Promise<void>
+  login: (email: string, password: string, targetUrl?: string) => Promise<void>
   logout: () => void
+  user: { id: string; email: string } | null
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = React.useState(false)
+  const [user, setUser] = React.useState<{ id: string; email: string } | null>(null)
   const router = useRouter()
 
   // 初始化时检查登录状态
   React.useEffect(() => {
-    const savedLoginState = localStorage.getItem("isLoggedIn")
-    if (savedLoginState === "true") {
+    const token = localStorage.getItem("token")
+    const userData = localStorage.getItem("user")
+    if (token && userData) {
       setIsLoggedIn(true)
+      setUser(JSON.parse(userData))
     }
   }, [])
 
-  const login = React.useCallback(async (username: string, password: string, targetUrl?: string) => {
-    // 这里可以添加实际的登录逻辑
-    // 模拟登录成功
-    setIsLoggedIn(true)
-    
-    // 同时存储到localStorage和cookie
-    localStorage.setItem("isLoggedIn", "true")
-    document.cookie = "isLoggedIn=true; path=/; max-age=86400" // 1天过期
+  const login = React.useCallback(async (email: string, password: string, targetUrl?: string) => {
+    try {
+      // 调用登录API
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-    // 登录成功后跳转到目标页面，如果没有目标页面则跳转到首页
-    if (targetUrl) {
-      router.push(targetUrl)
-    } else {
-      router.push("/")
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Login failed")
+      }
+
+      const data = await response.json()
+      
+      // 存储令牌和用户信息
+      localStorage.setItem("token", data.token)
+      localStorage.setItem("user", JSON.stringify(data.user))
+      
+      // 设置登录状态
+      setIsLoggedIn(true)
+      setUser(data.user)
+
+      // 登录成功后跳转到目标页面
+      if (targetUrl) {
+        router.push(targetUrl)
+      } else {
+        router.push("/")
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      throw error
     }
   }, [router])
 
   const logout = React.useCallback(() => {
+    // 清除登录状态和存储的令牌
     setIsLoggedIn(false)
-    
-    // 同时从localStorage和cookie移除
-    localStorage.removeItem("isLoggedIn")
-    document.cookie = "isLoggedIn=; path=/; max-age=0" // 立即过期
+    setUser(null)
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
     
     // 登出后跳转到首页
     router.push("/")
   }, [router])
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, login, logout, user }}>
       {children}
     </AuthContext.Provider>
   )
