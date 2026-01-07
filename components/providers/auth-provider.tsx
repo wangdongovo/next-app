@@ -12,6 +12,18 @@ interface AuthContextType {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined)
 
+// 设置 cookie
+const setCookie = (name: string, value: string, days: number = 1) => {
+  const expires = new Date()
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000)
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`
+}
+
+// 清除 cookie
+const deleteCookie = (name: string) => {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = React.useState(false)
   const [user, setUser] = React.useState<{ id: string; email: string } | null>(null)
@@ -49,9 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("token", data.token)
       localStorage.setItem("user", JSON.stringify(data.user))
       
-      // 设置登录状态
+      // 设置登录状态和 cookie
       setIsLoggedIn(true)
       setUser(data.user)
+      setCookie("isLoggedIn", "true")
 
       // 登录成功后跳转到目标页面
       if (targetUrl) {
@@ -66,11 +79,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router])
 
   const logout = React.useCallback(() => {
-    // 清除登录状态和存储的令牌
+    // 清除登录状态、存储的令牌和 cookie
     setIsLoggedIn(false)
     setUser(null)
     localStorage.removeItem("token")
     localStorage.removeItem("user")
+    deleteCookie("isLoggedIn")
     
     // 登出后跳转到首页
     router.push("/")
