@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useLoginModal } from "@/components/providers/login-modal-provider";
 import { useSearchParams } from "next/navigation";
 
-export default function Home() {
+function LoginHandler() {
   const { open } = useLoginModal();
   const searchParams = useSearchParams();
   
@@ -17,10 +17,21 @@ export default function Home() {
     }
   }, [searchParams, open]);
   
+  return null;
+}
+
+export default function Home() {
+  const { open } = useLoginModal();
+  
   return (
-    <div className="flex flex-col items-center justify-center p-8 gap-4">
-      <h1 className="text-2xl font-bold">Welcome</h1>
-      <Button onClick={open}>Open Login Dialog</Button>
-    </div>
+    <>
+      <Suspense fallback={null}>
+        <LoginHandler />
+      </Suspense>
+      <div className="flex flex-col items-center justify-center p-8 gap-4">
+        <h1 className="text-2xl font-bold">Welcome</h1>
+        <Button onClick={open}>Open Login Dialog</Button>
+      </div>
+    </>
   );
 }
