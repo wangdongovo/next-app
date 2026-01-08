@@ -36,6 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (token && userData) {
       setIsLoggedIn(true)
       setUser(JSON.parse(userData))
+      // 重新设置cookie，确保中间件能识别登录状态
+      setCookie("isLoggedIn", "true")
     }
   }, [])
 
