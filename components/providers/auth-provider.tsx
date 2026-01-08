@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 
 interface AuthContextType {
   isLoggedIn: boolean
+  ready: boolean
   login: (email: string, password: string, targetUrl?: string) => Promise<void>
   logout: () => void
   user: { id: string; email: string } | null
@@ -25,21 +26,28 @@ const deleteCookie = (name: string) => {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false)
-  const [user, setUser] = React.useState<{ id: string; email: string } | null>(null)
+  const [isLoggedIn, setIsLoggedIn] = React.useState<boolean>(() => {
+    if (typeof window === "undefined") return false
+    const token = window.localStorage.getItem("token")
+    const userData = window.localStorage.getItem("user")
+    return !!(token && userData)
+  })
+  const [user, setUser] = React.useState<{ id: string; email: string } | null>(() => {
+    if (typeof window === "undefined") return null
+    const userData = window.localStorage.getItem("user")
+    return userData ? JSON.parse(userData) : null
+  })
+  const [ready, setReady] = React.useState(false)
   const router = useRouter()
 
   // 初始化时检查登录状态
   React.useEffect(() => {
-    const token = localStorage.getItem("token")
-    const userData = localStorage.getItem("user")
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-      // 重新设置cookie，确保中间件能识别登录状态
+    // 根据初始状态设置cookie，并标记就绪
+    if (isLoggedIn) {
       setCookie("isLoggedIn", "true")
     }
-  }, [])
+    setReady(true)
+  }, [isLoggedIn])
 
   const login = React.useCallback(async (email: string, password: string, targetUrl?: string) => {
     try {
@@ -93,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router])
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout, user }}>
+    <AuthContext.Provider value={{ isLoggedIn, ready, login, logout, user }}>
       {children}
     </AuthContext.Provider>
   )

@@ -18,7 +18,7 @@ export function LoginModalProvider({ children }: { children: React.ReactNode }) 
   const [isOpen, setIsOpen] = React.useState(false)
   const [targetUrl, setTargetUrl] = React.useState<string | null>(null)
   const pathname = usePathname()
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, ready } = useAuth()
 
   const open = React.useCallback(() => setIsOpen(true), [])
   const close = React.useCallback(() => setIsOpen(false), [])
@@ -26,7 +26,7 @@ export function LoginModalProvider({ children }: { children: React.ReactNode }) 
   // 监听路由变化，检查是否需要显示登录模态框
   React.useEffect(() => {
     // 如果不是首页且未登录，则显示登录模态框
-    if (pathname !== "/" && !isLoggedIn) {
+    if (ready && pathname !== "/" && !isLoggedIn) {
       // 存储用户尝试访问的页面URL
       setTargetUrl(pathname)
       open()
@@ -34,7 +34,7 @@ export function LoginModalProvider({ children }: { children: React.ReactNode }) 
       // 已登录或访问的是首页，清空目标URL
       setTargetUrl(null)
     }
-  }, [pathname, isLoggedIn, open])
+  }, [pathname, isLoggedIn, ready, open])
 
   return (
     <LoginModalContext.Provider value={{ isOpen, open, close, targetUrl, setTargetUrl }}>
